@@ -1,0 +1,30 @@
+READ ME FIRST!
+  NEVER  use spaces on arguments
+Do: ++(x,5)
+DONT DO: ++(x, 5)
+
+Docs:
+
+print(var)
+  prints a variable
+
+var x = 5 // int
+  var x = 5.0 // float
+  var x = "smth" // string
+
+var x = input("input string: ") // input, var is a string
+var x = stoi(y) // string to int, name is similar to C++ (y is the string!)
+
+++(var,value)
+  example:
+++(x,5) // add 5 to x
+++(x,y) // add the value of y to x
+--(x,5) // remove 5 from x
+--(x,y) // remove the value of y from x
+
+if statements!
+  if(condition) {code}
+example:
+if(x > 5) {++(x,5);print(x)} // separate code with ;
+
+
