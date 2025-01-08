@@ -21,6 +21,8 @@ var x = stoi(y) // string to int, name is similar to C++ (y is the string!)
 ++(x,y) // add the value of y to x
 --(x,5) // remove 5 from x
 --(x,y) // remove the value of y from x
+**(x,y) // multiply x by y and save in the value of x
+**(x,5) // multiply x by 5 (or any number) and save in the value of x
 
 if statements!
   if(condition) {code}
