@@ -91,7 +91,7 @@ void mathparser(std::string code, int& var) {
     }
 }
 std::string tokenize(std::string str) {
-    if (str.find('(') != std::string::npos && str.find('=') == std::string::npos && str.find("if") == std::string::npos) {
+    if (str.find('(') != std::string::npos && str.find('=') == std::string::npos && str.find("if") == std::string::npos && str.find("for") == std::string::npos) {
         return "CALL\t" + getbehind(str, '(') + "\t" + getinside(str, '(', ')');
     } else if (str.find("var") != std::string::npos) {
         // var somevar = 5;
@@ -103,6 +103,8 @@ std::string tokenize(std::string str) {
         if (str.find("if(") != std::string::npos) {
             return "IF\t" + getinside(str, '(', ')') + "\t" + getinside(str, '{', '}');
         }
+    } else if (str.find("for") != std::string::npos) {
+        return "FOR\t" + getinside(str, '(', ')') + "\t" + str.substr(str.find('{') + 1, str.size() - str.find('{') - 2);
     }
 
 }
@@ -169,6 +171,45 @@ void run(std::string str) {
                         } else if (it->second.type == "float") {
                             float z = std::get<float>(it->second.value);
                             z -= std::stof(args[1]);
+                            it->second.value = z;
+                        }
+                    }
+                }
+            }
+        } else if (tokens[1] == "**") {
+            std::vector<std::string> args = split(tokens[2], ',');
+            if (args.size() >= 2) {
+                if (mVars.contains(args[0])) {
+                    auto it = mVars.find(args[0]);
+                    if (mVars.contains(args[1])) {
+                        auto it_1 = mVars.find(args[1]);
+                        if (it->second.type == "float") {
+                            if (it_1->second.type == "int") {
+                                float z = std::get<float>(it->second.value);
+                                z = z * static_cast<float>(std::get<int>(it_1->second.value));
+                                it->second.value = z;
+                            } else if (it_1->second.type == "float") {
+                                float z = std::get<float>(it->second.value);
+                                z = z * std::get<float>(it_1->second.value);
+                                it->second.value = z;
+                            }
+                        } else if (it->second.type == "int") {
+                            if (it_1->second.type == "int") {
+                                int z = std::get<int>(it->second.value);
+                                z = z * std::get<int>(it_1->second.value);
+                                it->second.value = z;
+                            } else if (it_1->second.type == "float") {
+                                std::cout << "ERROR, CANT ADD FLOAT TO INT!, DECLARE THE VARIABLE WITH '.' eg: var x = 1.0" << std::endl;
+                            }
+                        }
+                    } else {
+                        if (it->second.type == "int") {
+                            int z = std::get<int>(it->second.value);
+                            z = z * std::stoi(args[1]);
+                            it->second.value = z;
+                        } else if (it->second.type == "float") {
+                            float z = std::get<float>(it->second.value);
+                            z = z * std::stof(args[1]);
                             it->second.value = z;
                         }
                     }
@@ -272,6 +313,22 @@ void run(std::string str) {
                 } catch (...) {
                     std::cout << "Most likely you are trying to use either strings or the code just does not work lol" << std::endl;
                 }
+            }
+        }
+    } else if (tokens[0] == "FOR") {
+        int num;
+        if (mVars.contains(tokens[1])) {
+            auto it = mVars.find(tokens[1]);
+            if (it->second.type == "int") {
+                num = std::get<int>(it->second.value);
+            }
+        } else {
+            num = std::stoi(tokens[1]);
+        }
+        std::vector<std::string> torun = split(tokens[2], ';');
+        for (int i = 0; i < num;++i) {
+            for (const auto code : torun) {
+                run(tokenize(code));
             }
         }
     } else if (tokens[0] == "VAR") {
