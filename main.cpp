@@ -3,7 +3,16 @@
 #include <string>
 #include <variant>
 #include <map>
+#include <random>
+#include <ctime>
+#include <cstdlib>
 #include <algorithm>
+// thank you chatgpt
+// future me here, chatgpt did not help so idk, use this for now
+int genrandomnum(int min, int max) {
+    std::random_device rd;
+    return rd() % max + min;
+}
 std::vector<std::string> split(std::string str, char ch) {
     std::vector<std::string> vTemp;
     std::string sTemp;
@@ -53,7 +62,12 @@ void printvar(vars var) {
         std::cout << std::get<int>(var.value) << std::endl;
     }
 }
-
+vars randnum(int min, int max) {
+    vars var;
+    var.type = "int";
+    var.value = genrandomnum(min, max);
+    return var;
+}
 std::map<std::string, vars> mVars;
 void mathparser(std::string code, int& var) {
     std::vector<std::string> tokens = split(code, ';');
@@ -93,7 +107,7 @@ void mathparser(std::string code, int& var) {
 std::string tokenize(std::string str) {
     if (str.find('(') != std::string::npos && str.find('=') == std::string::npos && str.find("if") == std::string::npos && str.find("for") == std::string::npos) {
         return "CALL\t" + getbehind(str, '(') + "\t" + getinside(str, '(', ')');
-    } else if (str.find("var") != std::string::npos) {
+    } else if (str.find("var") != std::string::npos && str.find("if") == std::string::npos && str.find("for") == std::string::npos) {
         // var somevar = 5;
         //     _______ trying to get this
         std::string actualname = str.substr(str.find("var") + 4, str.find('=') - str.find("var") - 5);
@@ -266,6 +280,8 @@ void run(std::string str) {
                     one = std::to_string(std::get<float>(mVars[expression[0]].value));
                 } else if (mVars[expression[0]].type == "int") {
                     one = std::to_string(std::get<int>(mVars[expression[0]].value));
+                } else if (mVars[expression[0]].type == "string") {
+                    one = std::get<std::string>(mVars[expression[0]].value);;
                 }
             } else {
                 one = expression[0];
@@ -275,6 +291,8 @@ void run(std::string str) {
                     two = std::to_string(std::get<float>(mVars[expression[2]].value));
                 } else if (mVars[expression[2]].type == "int") {
                     two = std::to_string(std::get<int>(mVars[expression[2]].value));
+                } else if (mVars[expression[2]].type == "string") {
+                    two = std::get<std::string>(mVars[expression[2]].value);;
                 }
             } else {
                 two = expression[2];
@@ -393,12 +411,22 @@ void run(std::string str) {
                             }
                         }
                     }
+                } else if (functionname == "rand") {
+                    std::string args = getinside(tokens[2], '(', ')');
+                    std::vector<std::string> vArgs = split(args, ',');
+                    if (vArgs.size() >= 2) {
+                        int min = std::stoi(vArgs[0]);
+                        int max = std::stoi(vArgs[1]);
+                        vars var = randnum(min, max);
+                        mVars.insert(std::make_pair(tokens[1], var));
+                    }
                 }
             }
         }
     }
 }
 int main() {
+    srand(static_cast<unsigned int>(std::time(NULL)));
     while (true) {
         std::cout << "~>";
         std::string cmd;
