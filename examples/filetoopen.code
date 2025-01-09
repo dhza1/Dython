@@ -1,0 +1,5 @@
+print("Hello, World!")
+var x = input("enter a number: ")
+var y = stoi(x)
+**(y,2)
+print(y)
