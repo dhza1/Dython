@@ -7,6 +7,8 @@
 #include <ctime>
 #include <cstdlib>
 #include <algorithm>
+#include <fstream>
+#include <sstream>
 // thank you chatgpt
 // future me here, chatgpt did not help so idk, use this for now
 int genrandomnum(int min, int max) {
@@ -104,6 +106,14 @@ void mathparser(std::string code, int& var) {
         }
     }
 }
+std::string readfile(std::string str) {
+    std::fstream file;
+    file.open(str);
+    std::stringstream buffer;
+    buffer << file.rdbuf();
+    std::string fileContents = buffer.str();
+    return fileContents;
+}
 std::string tokenize(std::string str) {
     if (str.find('(') != std::string::npos && str.find('=') == std::string::npos && str.find("if") == std::string::npos && str.find("for") == std::string::npos) {
         return "CALL\t" + getbehind(str, '(') + "\t" + getinside(str, '(', ')');
@@ -149,6 +159,16 @@ void run(std::string str) {
                     } else {
                         std::cout << std::get<int>(mVars[tokens[2]].value) << std::endl;
                     }
+                }
+            }
+        } else if(tokens[1] == "runfile") {
+            std::vector<std::string> args = split(tokens[2], ',');
+            if (args.size() >= 1) {
+                std::string file = readfile(getinside2(args[0], '"'));
+                // getinside2(std::string str, char ch)
+                std::vector<std::string> lines = split(file, '\n');
+                for (const auto line : lines) {
+                    run(tokenize(line));
                 }
             }
         } else if (tokens[1] == "--") {
