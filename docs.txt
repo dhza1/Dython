@@ -33,3 +33,5 @@ rand:
 var x = rand(min,max)
 var x = rand(0,100)
 fun fact: this is absolute shit, does not give an random number every time you try it, if you know a fix, pls help
+run file:
+runfile("filename.txt") // runs code inside a file
