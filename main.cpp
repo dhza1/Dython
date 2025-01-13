@@ -71,41 +71,6 @@ vars randnum(int min, int max) {
     return var;
 }
 std::map<std::string, vars> mVars;
-void mathparser(std::string code, int& var) {
-    std::vector<std::string> tokens = split(code, ';');
-    for (const auto token : tokens) {
-        std::vector<std::string> idfk = split(token, ' ');
-        if (idfk.size() >= 3) {
-            if (mVars.contains(idfk[0])) {
-                if (mVars[idfk[0]].type == "int") {
-                    idfk[0] = std::to_string(std::get<int>(mVars[idfk[0]].value));
-                } else if (mVars[idfk[0]].type == "float") {
-                    idfk[0] = std::to_string(std::get<float>(mVars[idfk[0]].value));
-                }
-            }
-            if (mVars.contains(idfk[2])) {
-                if (mVars[idfk[2]].type == "int") {
-                    idfk[2] = std::to_string(std::get<int>(mVars[idfk[2]].value));
-                } else if (mVars[idfk[2]].type == "float") {
-                    idfk[2] = std::to_string(std::get<float>(mVars[idfk[2]].value));
-                }
-            }
-            std::string expr = idfk[1];
-            // var idk = 1 + 1;2 - 2, var idk = 2 + 0
-            int firstnum = std::stoi(idfk[0]);
-            int secondnum = std::stoi(idfk[2]);
-            if (expr == "+") {
-                var += firstnum + secondnum;
-            } else if (expr == "-") {
-                var += firstnum - secondnum;
-            } else if (expr == "/") {
-                var += firstnum / secondnum;
-            } else if (expr == "*") {
-                var += firstnum * secondnum;
-            }
-        }
-    }
-}
 std::string readfile(std::string str) {
     std::fstream file;
     file.open(str);
@@ -114,9 +79,18 @@ std::string readfile(std::string str) {
     std::string fileContents = buffer.str();
     return fileContents;
 }
+struct Function {
+    std::vector<std::string> code;
+    std::vector<std::string> vars;
+};
+std::map<std::string, Function> funcs;
 std::string tokenize(std::string str) {
-    if (str.find('(') != std::string::npos && str.find('=') == std::string::npos && str.find("if") == std::string::npos && str.find("for") == std::string::npos) {
-        return "CALL\t" + getbehind(str, '(') + "\t" + getinside(str, '(', ')');
+    if (str.find('(') != std::string::npos && str.find('=') == std::string::npos && str.find("if") == std::string::npos && str.find("for") == std::string::npos && str.find("func") == std::string::npos && funcs.contains(getbehind(str, ')')) == false) {
+       if (funcs.contains(getbehind(str, '(')) == false) {
+           return "CALL\t" + getbehind(str, '(') + "\t" + getinside(str, '(', ')');
+       } else {
+           return "CALLFUNC\t" + getbehind(str, '(') + "\t" + getinside(str, '(', ')');
+       }
     } else if (str.find("var") != std::string::npos && str.find("if") == std::string::npos && str.find("for") == std::string::npos) {
         // var somevar = 5;
         //     _______ trying to get this
@@ -129,8 +103,9 @@ std::string tokenize(std::string str) {
         }
     } else if (str.find("for") != std::string::npos) {
         return "FOR\t" + getinside(str, '(', ')') + "\t" + str.substr(str.find('{') + 1, str.size() - str.find('{') - 2);
+    } else if (str.find("func") != std::string::npos) {
+        return "FUNCTION\t" + str.substr(str.find("func") + 5, str.find('{') - 5) + "\t" + str.substr(str.find('{') + 1, str.size() - str.find('{') - 2);
     }
-
 }
 // here comes hell
 std::string findvartype(std::string thing) {
@@ -161,7 +136,7 @@ void run(std::string str) {
                     }
                 }
             }
-        } else if(tokens[1] == "runfile") {
+        } else if (tokens[1] == "runfile") {
             std::vector<std::string> args = split(tokens[2], ',');
             if (args.size() >= 1) {
                 std::string file = readfile(getinside2(args[0], '"'));
@@ -289,6 +264,20 @@ void run(std::string str) {
                 }
             }
         }
+    } else if (tokens[0] == "CALLFUNC") {
+        if (funcs.contains(tokens[1])) {
+            auto it = funcs.find(tokens[1]);
+            std::vector<std::string> UserArgs = split(tokens[2], ',');
+            if (UserArgs.size() == it->second.vars.size()) {
+                for (int i = 0; i < UserArgs.size(); ++i) {
+                    std::string name = "var " + it->second.vars[i] + " = " + UserArgs[i];
+                    run(tokenize(name));
+                }
+            }
+            for (const auto code : it->second.code) {
+                run(tokenize(code));
+            }
+        }
     } else if (tokens[0] == "IF") {
         std::vector<std::string> expression = split(tokens[1], ' ');
         if (expression.size() >= 3) {
@@ -369,6 +358,18 @@ void run(std::string str) {
                 run(tokenize(code));
             }
         }
+    } else if (tokens[0] == "FUNCTION") {
+        std::string functionName = getbehind(tokens[1], '(');
+        std::vector<std::string> args = split(getinside(tokens[1], '(', ')'), ',');
+        std::cout << functionName << std::endl;
+        Function func;
+        func.vars = args;
+        //func.args
+        func.code = split(tokens[2], ';');
+        if (funcs.contains(functionName)) {
+            funcs.erase(functionName);
+        }
+        funcs.insert(std::make_pair(functionName, func));
     } else if (tokens[0] == "VAR") {
         if (str.find("(") == std::string::npos) {
             vars var;
@@ -423,6 +424,8 @@ void run(std::string str) {
                                 try {
                                     vars var;
                                     var.type = "int";
+                                    std::cout << it->second.type << std::endl;
+                                    std::cout << std::get<std::string>(it->second.value) << std::endl;
                                     var.value = std::stoi(std::get<std::string>(it->second.value));
                                     mVars.insert(std::make_pair(tokens[1], var));
                                 } catch (...) {
