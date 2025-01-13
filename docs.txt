@@ -35,3 +35,8 @@ var x = rand(0,100)
 fun fact: this is absolute shit, does not give an random number every time you try it, if you know a fix, pls help
 run file:
 runfile("filename.txt") // runs code inside a file
+
+functions:
+func smth(args) {codehere}
+example:
+func dhza(x,y) {++(x,y);print(x)}
